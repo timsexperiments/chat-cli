@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package github.com.timsexperiments.chatcli.errors;
+
+option go_package = "github.com/timsexperiments/chat-cli/internal/proto/errors";
+option csharp_namespace = "TimsExperiments.ChatCli.Errors";
+
+// Error is a message that is returned when an error occurs.
+message Error {
+    // The user friendly message for the error.
+    string message = 1;
+}

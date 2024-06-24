@@ -1,0 +1,109 @@
+syntax = "proto3";
+
+package github.com.timsexperiments.chatcli.chat;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/timsexperiments/chat-cli/internal/proto/chat";
+option csharp_namespace = "TimsExperiments.ChatCli.Chat";
+
+// A conversation between two parties.
+message Conversation {
+    // A unique identifier for the conversation.
+    int64 id = 1;
+    // The title of the conversation.
+    string title = 2;
+    // A summary of the previous context in the chat.
+    string context = 3;
+    // The time that the conversation was created.
+    google.protobuf.Timestamp created_at = 4;
+    // The messages in the conversation.
+    repeated Message messages = 5;
+}
+
+// A message in a conversation.
+message Message {
+    // The identifier for the message.
+    int64 id = 1;
+    // The contents of the message.
+    string body = 2;
+    // The time that the message was created.
+    google.protobuf.Timestamp created_at = 3;
+    // Who the message was from.
+    Sender sender = 4;
+
+    // The sender of a message.
+    enum Sender {
+        // The sender is unknown.
+        SENDER_UNSPECIFIED = 0;
+        // The sender is the user.
+        USER = 1;
+        // The sender is the bot.
+        BOT = 2;
+    }
+}
+
+// Request for creating a conversation.
+message CreateConversationRequest {
+    // The title of the conversation.
+    string title = 1;
+}
+
+// Request for creating a message.
+message CreateMessageRequest {
+    // The contents of the message.
+    string body = 1;
+}
+
+// Request for creating a message.
+message ChatEvent {
+    // The type of the event.
+    Type type = 1;
+
+    // The event details to send.
+    oneof event {
+        // The message to send.
+        MessageEvent message = 2;
+        ErrorEvent error = 3;
+    }
+
+    // The type of ChatEvent.
+    enum Type {
+        // Event type is not specified.
+        EVENT_TYPE_UNSPECIFIED = 0;
+        // Event is a messaging event.
+        MESSAGE = 1;
+        // Event is an error event.
+        ERROR = 2;
+    }
+}
+
+// Details for a messaging event.
+message MessageEvent {
+    // The contents of the message.
+    string body = 1;
+}
+
+// Details for an error event.
+message ErrorEvent {
+    // The type of the error.
+    Type type = 1;
+    // The error message.
+    string message = 2;
+
+    // Type of error event.
+    enum Type {
+        // Error type is not specified.
+        ERROR_TYPE_UNSPECIFIED = 0;
+        // Indication of an error due to the input.
+        INPUT_VALIDATION_ERROR = 1;
+        // Indication that the error was due to the server processing.
+        SERVER_ERROR = 2;
+    }
+}
+
+// Response for listing conversations.
+message ListConversationsResponse {
+    // A list of requested converstations.
+    repeated Conversation conversations = 1;
+}

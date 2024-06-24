@@ -78,3 +78,7 @@ bin/
 
 # Generated files
 *.pb.go
+
+# Sqlite databases
+*.db
+*.sqlite
