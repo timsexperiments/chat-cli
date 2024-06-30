@@ -14,12 +14,18 @@ import (
 	"github.com/magefile/mage/sh"
 )
 
-// A build step that requires additional params, or platform specific steps for example
+func Run() error {
+	mg.Deps(Build)
+	return sh.RunV("bin/api/main")
+}
+
+// Builds the API project to the bin/api/main binary.
 func Build() error {
 	mg.Deps(GenProto)
 	return sh.RunV("go", "build", "-o", "bin/api/main", "cmd/api/main.go")
 }
 
+// Generates the Golang and C# protofiles for the project.
 func GenProto() error {
 	return sh.RunV("protoc", "--proto_path=proto", "--csharp_out=cli/build/gen", "--csharp_opt=file_extension=.g.cs", "--go_out=internal/proto", "--go_opt=paths=source_relative", "chat/chat.proto", "errors/error.proto")
 }
