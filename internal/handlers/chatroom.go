@@ -49,6 +49,8 @@ func handleConversation(c echo.Context) error {
 		_, msg, err := ws.ReadMessage()
 		if err != nil {
 			c.Logger().Error(err)
+			ws.CloseHandler()(websocket.CloseInternalServerErr, "Internal Server Error")
+			return nil
 		}
 
 		eventMsg := &chat.MessageEvent{}

@@ -28,8 +28,8 @@ func RegisterConversationsHandlers(e *echo.Echo) {
 	conversationGroup := conversations.Group("/:id")
 	conversationGroup.Use(middleware.AuthChecker)
 	conversationGroup.GET("", conversationHandler)
-	messages := conversationGroup.Group("/messages")
-	messages.POST("", createMessage)
+	messagesGroup := conversationGroup.Group("/messages")
+	messagesGroup.POST("", createMessage)
 }
 
 func createConversationHandler(c echo.Context) error {
