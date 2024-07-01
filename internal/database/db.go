@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/timsexperiments/chat-cli/internal/constants"
+	"github.com/timsexperiments/chat-cli/internal/config"
 )
 
 type DB struct {
@@ -14,7 +14,7 @@ type DB struct {
 
 func CreateDB(sql *sql.DB) *DB {
 	db := &DB{sql: sql, queries: newQueryCache()}
-	_, err := db.Exec(constants.INIT_QUERY)
+	_, err := db.Exec(config.INIT_QUERY)
 	if err != nil {
 		panic(fmt.Errorf("unable to initialize database: %w", err))
 	}
