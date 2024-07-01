@@ -10,5 +10,5 @@ SELECT
     m.created_at AS message_created_at
 FROM conversations c 
     LEFT JOIN messages m ON c.id = m.conversation_id
-WHERE c.id = ?
+WHERE c.title = ?
 ORDER BY m.created_at DESC;

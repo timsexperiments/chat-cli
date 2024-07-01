@@ -11,14 +11,16 @@ option csharp_namespace = "TimsExperiments.ChatCli.Chat";
 message Conversation {
     // A unique identifier for the conversation.
     int64 id = 1;
+    // The openai completion id.
+    string completion_id = 2;
     // The title of the conversation.
-    string title = 2;
+    string title = 3;
     // A summary of the previous context in the chat.
-    string context = 3;
+    string context = 4;
     // The time that the conversation was created.
-    google.protobuf.Timestamp created_at = 4;
+    google.protobuf.Timestamp created_at = 5;
     // The messages in the conversation.
-    repeated Message messages = 5;
+    repeated Message messages = 6;
 }
 
 // A message in a conversation.
