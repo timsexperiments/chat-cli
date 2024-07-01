@@ -8,9 +8,9 @@ const (
 
 const (
 	INIT_QUERY                = "init"
-	CREATE_CONVERSATION_QUERY = "create-conversation"
-	GET_CONVERSATION_QUERY    = "get-conversation"
-	LIST_CONVERSATIONS_QUERY  = "list-conversations"
-	CREATE_MESSAGE_QUERY      = "create-message"
-	GET_MESSAGE_QUERY         = "get-message"
+	CREATE_CONVERSATION_QUERY = "create_conversation"
+	GET_CONVERSATION_QUERY    = "get_conversation"
+	LIST_CONVERSATIONS_QUERY  = "list_conversations"
+	CREATE_MESSAGE_QUERY      = "create_message"
+	GET_MESSAGE_QUERY         = "get_message"
 )
