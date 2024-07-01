@@ -7,10 +7,11 @@ const (
 )
 
 const (
-	INIT_QUERY                = "init"
-	CREATE_CONVERSATION_QUERY = "create_conversation"
-	GET_CONVERSATION_QUERY    = "get_conversation"
-	LIST_CONVERSATIONS_QUERY  = "list_conversations"
-	CREATE_MESSAGE_QUERY      = "create_message"
-	GET_MESSAGE_QUERY         = "get_message"
+	INIT_QUERY                      = "init"
+	CREATE_CONVERSATION_QUERY       = "create_conversation"
+	GET_CONVERSATION_QUERY          = "get_conversation"
+	GET_CONVERSATION_BY_TITLE_QUERY = "get_conversation_by_title"
+	LIST_CONVERSATIONS_QUERY        = "list_conversations"
+	CREATE_MESSAGE_QUERY            = "create_message"
+	GET_MESSAGE_QUERY               = "get_message"
 )

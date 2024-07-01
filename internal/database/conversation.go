@@ -1,6 +1,7 @@
 package database
 
 import (
+	"database/sql"
 	"fmt"
 	"time"
 
@@ -28,6 +29,16 @@ func (db *DB) CreateConversation(title string) (*chat.Conversation, error) {
 	return db.GetConversation(int(id))
 }
 
+func (db *DB) GetConversationByTitle(title string) (*chat.Conversation, error) {
+	rows, err := db.Query(constants.GET_CONVERSATION_BY_TITLE_QUERY, title)
+	if err != nil {
+		return nil, fmt.Errorf("unable to get conversation: %w", err)
+	}
+
+	defer rows.Close()
+	return conversationWithMessagesFromRow(rows)
+}
+
 func (db *DB) GetConversation(id int) (*chat.Conversation, error) {
 	rows, err := db.Query(constants.GET_CONVERSATION_QUERY, id)
 	if err != nil {
@@ -35,6 +46,43 @@ func (db *DB) GetConversation(id int) (*chat.Conversation, error) {
 	}
 
 	defer rows.Close()
+	return conversationWithMessagesFromRow(rows)
+}
+
+func (db *DB) ListConversations() ([]*chat.Conversation, error) {
+	rows, err := db.Query(constants.LIST_CONVERSATIONS_QUERY)
+	if err != nil {
+		return nil, fmt.Errorf("unable to list conversations: %w", err)
+	}
+
+	defer rows.Close()
+	conversations := []*chat.Conversation{}
+	for rows.Next() {
+		var id *int64
+		var title, context *string
+		var createdAt *time.Time
+		if err := rows.Scan(&id, &title, &context, &createdAt); err != nil {
+			return nil, fmt.Errorf("unable to build conversation: %w", err)
+		}
+		if id == nil || title == nil || createdAt == nil {
+			return nil, fmt.Errorf("missing required fields. id = %v, title = %v, context = %v, createdAt = %v: %w", id, title, context, createdAt, err)
+		}
+		conversation := &chat.Conversation{
+			Id:        *id,
+			Title:     *title,
+			CreatedAt: timestamppb.New(*createdAt),
+			Messages:  nil,
+		}
+		if context != nil {
+			conversation.Context = *context
+		}
+		conversations = append(conversations, conversation)
+	}
+
+	return conversations, nil
+}
+
+func conversationWithMessagesFromRow(rows *sql.Rows) (*chat.Conversation, error) {
 	var conversation *chat.Conversation
 	var conversationId *int64
 	messages := make([]*chat.Message, 0)
@@ -79,7 +127,7 @@ func (db *DB) GetConversation(id int) (*chat.Conversation, error) {
 		}
 		senderValue, ok := chat.Message_Sender_value[*messageSender]
 		if !ok {
-			return nil, fmt.Errorf("unable to parse sender one conversation message %d: %w", messageId, err)
+			return nil, fmt.Errorf("unable to parse sender one conversation message %d", messageId)
 		}
 		messages = append(messages, &chat.Message{
 			Id:        *messageId,
@@ -98,37 +146,4 @@ func (db *DB) GetConversation(id int) (*chat.Conversation, error) {
 	}
 
 	return conversation, nil
-}
-
-func (db *DB) ListConversations() ([]*chat.Conversation, error) {
-	rows, err := db.Query(constants.LIST_CONVERSATIONS_QUERY)
-	if err != nil {
-		return nil, fmt.Errorf("unable to list conversations: %w", err)
-	}
-
-	defer rows.Close()
-	conversations := []*chat.Conversation{}
-	for rows.Next() {
-		var id *int64
-		var title, context *string
-		var createdAt *time.Time
-		if err := rows.Scan(&id, &title, &context, &createdAt); err != nil {
-			return nil, fmt.Errorf("unable to build conversation: %w", err)
-		}
-		if id == nil || title == nil || createdAt == nil {
-			return nil, fmt.Errorf("missing required fields. id = %v, title = %v, context = %v, createdAt = %v: %w", id, title, context, createdAt, err)
-		}
-		conversation := &chat.Conversation{
-			Id:        *id,
-			Title:     *title,
-			CreatedAt: timestamppb.New(*createdAt),
-			Messages:  nil,
-		}
-		if context != nil {
-			conversation.Context = *context
-		}
-		conversations = append(conversations, conversation)
-	}
-
-	return conversations, nil
 }
