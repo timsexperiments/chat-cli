@@ -10,7 +10,7 @@ import (
 )
 
 func (db *DB) CreateConversation(title string) (*chat.Conversation, error) {
-	result, err := db.Exec("create-conversation", title)
+	result, err := db.Exec(constants.CREATE_CONVERSATION_QUERY, title)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create conversation: %w", err)
 	}
