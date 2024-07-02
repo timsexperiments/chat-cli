@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/timsexperiments/chat-cli/internal/constants"
+	"github.com/timsexperiments/chat-cli/internal/config"
 	"github.com/timsexperiments/chat-cli/internal/proto/chat"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func (db *DB) CreateConversation(title string) (*chat.Conversation, error) {
-	result, err := db.Exec(constants.CREATE_CONVERSATION_QUERY, title)
+	result, err := db.Exec(config.CREATE_CONVERSATION_QUERY, title)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create conversation: %w", err)
 	}
@@ -30,7 +30,7 @@ func (db *DB) CreateConversation(title string) (*chat.Conversation, error) {
 }
 
 func (db *DB) GetConversationByTitle(title string) (*chat.Conversation, error) {
-	rows, err := db.Query(constants.GET_CONVERSATION_BY_TITLE_QUERY, title)
+	rows, err := db.Query(config.GET_CONVERSATION_BY_TITLE_QUERY, title)
 	if err != nil {
 		return nil, fmt.Errorf("unable to get conversation: %w", err)
 	}
@@ -40,7 +40,7 @@ func (db *DB) GetConversationByTitle(title string) (*chat.Conversation, error) {
 }
 
 func (db *DB) GetConversation(id int) (*chat.Conversation, error) {
-	rows, err := db.Query(constants.GET_CONVERSATION_QUERY, id)
+	rows, err := db.Query(config.GET_CONVERSATION_QUERY, id)
 	if err != nil {
 		return nil, fmt.Errorf("unable to get conversation: %w", err)
 	}
@@ -50,7 +50,7 @@ func (db *DB) GetConversation(id int) (*chat.Conversation, error) {
 }
 
 func (db *DB) ListConversations() ([]*chat.Conversation, error) {
-	rows, err := db.Query(constants.LIST_CONVERSATIONS_QUERY)
+	rows, err := db.Query(config.LIST_CONVERSATIONS_QUERY)
 	if err != nil {
 		return nil, fmt.Errorf("unable to list conversations: %w", err)
 	}
@@ -59,9 +59,9 @@ func (db *DB) ListConversations() ([]*chat.Conversation, error) {
 	conversations := []*chat.Conversation{}
 	for rows.Next() {
 		var id *int64
-		var title, context *string
+		var completionId, title, context *string
 		var createdAt *time.Time
-		if err := rows.Scan(&id, &title, &context, &createdAt); err != nil {
+		if err := rows.Scan(&id, &completionId, &title, &context, &createdAt); err != nil {
 			return nil, fmt.Errorf("unable to build conversation: %w", err)
 		}
 		if id == nil || title == nil || createdAt == nil {
@@ -76,10 +76,33 @@ func (db *DB) ListConversations() ([]*chat.Conversation, error) {
 		if context != nil {
 			conversation.Context = *context
 		}
+		if completionId != nil {
+			conversation.CompletionId = *completionId
+		}
 		conversations = append(conversations, conversation)
 	}
 
 	return conversations, nil
+}
+
+func (db *DB) UpdateConversation(conversation *chat.Conversation) (*chat.Conversation, error) {
+	result, err := db.Exec(
+		config.UPDATE_CONVERSATION_QUERY,
+		conversation.CompletionId,
+		conversation.Title,
+		conversation.Context,
+		conversation.Id)
+	if err != nil {
+		return nil, fmt.Errorf("unable to update conversation: %w", err)
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return nil, fmt.Errorf("unable to get rows affected: %w", err)
+	}
+	if rowsAffected != 1 {
+		return nil, fmt.Errorf("expected 1 row to be affected, got %d", rowsAffected)
+	}
+	return db.GetConversation(int(conversation.Id))
 }
 
 func conversationWithMessagesFromRow(rows *sql.Rows) (*chat.Conversation, error) {
@@ -88,15 +111,15 @@ func conversationWithMessagesFromRow(rows *sql.Rows) (*chat.Conversation, error)
 	messages := make([]*chat.Message, 0)
 	for rows.Next() {
 		var id int64
+		var completionId, context *string
 		var title string
-		var context *string
 		var createdAt time.Time
 		var messageId *int64
-		var messageBody *string
+		var messageBody, messageSender *string
 		var messageCreatedAt *time.Time
-		var messageSender *string
 		if err := rows.Scan(
 			&id,
+			&completionId,
 			&title,
 			&context,
 			&createdAt,
@@ -117,6 +140,9 @@ func conversationWithMessagesFromRow(rows *sql.Rows) (*chat.Conversation, error)
 			}
 			if context != nil {
 				conversation.Context = *context
+			}
+			if completionId != nil {
+				conversation.CompletionId = *completionId
 			}
 		}
 		if id != *conversationId {

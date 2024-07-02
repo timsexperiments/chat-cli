@@ -8,14 +8,14 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"
 	"github.com/timsexperiments/chat-cli/internal/chatgpt"
-	"github.com/timsexperiments/chat-cli/internal/constants"
+	"github.com/timsexperiments/chat-cli/internal/config"
 	"github.com/timsexperiments/chat-cli/internal/database"
 	"github.com/timsexperiments/chat-cli/internal/proto/chat"
 	"google.golang.org/protobuf/proto"
 )
 
 func handleConversation(c echo.Context) error {
-	token, ok := c.Get(constants.OPEN_API_TOKEN_KEY).(string)
+	token, ok := c.Get(config.OPEN_AI_TOKEN_KEY).(string)
 	if !ok {
 		return echo.NewHTTPError(http.StatusUnauthorized, "missing open api token")
 	}
@@ -26,7 +26,7 @@ func handleConversation(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Errorf("invalid conversation id [%s]: %w", idParam, err).Error())
 	}
 
-	db, ok := c.Get(constants.DB_KEY).(*database.DB)
+	db, ok := c.Get(config.DB_KEY).(*database.DB)
 	if !ok {
 		c.Logger().Error(err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "unable to get database")
@@ -73,7 +73,8 @@ func handleConversation(c echo.Context) error {
 		}
 
 		var chatEvent *chat.ChatEvent
-		chatEvent, context, err = askChatGpt(eventMsg.Body, token, context)
+		var completionId string
+		chatEvent, context, completionId, err = askChatGpt(eventMsg.Body, token, context)
 		if err != nil {
 			c.Logger().Error(err)
 			errorEvent, err := buildErrorResposne(chat.ErrorEvent_SERVER_ERROR, "unable to ask chatgpt")
@@ -89,6 +90,12 @@ func handleConversation(c echo.Context) error {
 		}
 
 		if _, err := db.CreateMessage(chatEvent.GetMessage().Body, chat.Message_BOT, conversation.Id); err != nil {
+			c.Logger().Error(err)
+		}
+
+		conversation.Context = context
+		conversation.CompletionId = completionId
+		if _, err = db.UpdateConversation(conversation); err != nil {
 			c.Logger().Error(err)
 		}
 
@@ -123,10 +130,15 @@ func buildErrorResposne(errType chat.ErrorEvent_Type, message string) ([]byte, e
 	return proto.Marshal(event)
 }
 
-func askChatGpt(message string, token, context string) (*chat.ChatEvent, string, error) {
-	response, err := chatgpt.SendMessage(message, token)
+func askChatGpt(message, token, context string) (*chat.ChatEvent, string, string, error) {
+	messages := []*chat.Message{{Body: message, Sender: chat.Message_USER}}
+	if context != "" {
+		messages = append(messages, &chat.Message{Body: context, Sender: chat.Message_BOT})
+	}
+
+	response, context, completionId, err := chatgpt.SendMessage(message, token, messages)
 	if err != nil {
-		return nil, "", fmt.Errorf("unable to ask chatgpt: %w", err)
+		return nil, "", "", fmt.Errorf("unable to ask chatgpt: %w", err)
 	}
 	event := &chat.ChatEvent{
 		Type: chat.ChatEvent_MESSAGE,
@@ -134,5 +146,5 @@ func askChatGpt(message string, token, context string) (*chat.ChatEvent, string,
 			Message: &chat.MessageEvent{Body: response},
 		},
 	}
-	return event, context, nil
+	return event, context, completionId, nil
 }
