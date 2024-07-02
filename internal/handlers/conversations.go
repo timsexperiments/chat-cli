@@ -7,7 +7,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"
-	"github.com/timsexperiments/chat-cli/internal/constants"
+	"github.com/timsexperiments/chat-cli/internal/config"
 	"github.com/timsexperiments/chat-cli/internal/database"
 	"github.com/timsexperiments/chat-cli/internal/middleware"
 	"github.com/timsexperiments/chat-cli/internal/proto/chat"
@@ -33,8 +33,8 @@ func RegisterConversationsHandlers(e *echo.Echo) {
 }
 
 func createConversationHandler(c echo.Context) error {
-	db := c.Get(constants.DB_KEY).(*database.DB)
-	body, ok := c.Get(constants.BODY_KEY).([]byte)
+	db := c.Get(config.DB_KEY).(*database.DB)
+	body, ok := c.Get(config.BODY_KEY).([]byte)
 	if !ok {
 		return echo.NewHTTPError(http.StatusBadRequest, "missing body")
 	}
@@ -51,7 +51,7 @@ func createConversationHandler(c echo.Context) error {
 }
 
 func listConversationsHandler(c echo.Context) error {
-	db := c.Get(constants.DB_KEY).(*database.DB)
+	db := c.Get(config.DB_KEY).(*database.DB)
 	conversationsList, err := db.ListConversations()
 	if err != nil {
 		c.Logger().Error(err)
@@ -70,30 +70,38 @@ func conversationHandler(c echo.Context) error {
 }
 
 func getConversationHandler(c echo.Context) error {
-	db := c.Get(constants.DB_KEY).(*database.DB)
+	db := c.Get(config.DB_KEY).(*database.DB)
 	strId := c.Param("id")
 	id, err := strconv.Atoi(strId)
+	var conversation *chat.Conversation
+
+	if err != nil {
+		conversation, err = db.GetConversationByTitle(strId)
+		if err != nil {
+			c.Logger().Error(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("unable to get conversation by title '%s': %w", strId, err).Error())
+		}
+		return response.Protobuf(c, http.StatusOK, conversation)
+	}
+
+	conversation, err = db.GetConversation(id)
 	if err != nil {
 		c.Logger().Error(err)
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Errorf("invalid conversation id [%s]: %w", strId, err).Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("unable to get conversation by id '%d': %w", id, err).Error())
 	}
-	conversation, err := db.GetConversation(id)
-	if err != nil {
-		c.Logger().Error(err)
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("unable to get conversation: %w", err).Error())
-	}
+
 	return response.Protobuf(c, http.StatusOK, conversation)
 }
 
 func createMessage(c echo.Context) error {
-	db := c.Get(constants.DB_KEY).(*database.DB)
+	db := c.Get(config.DB_KEY).(*database.DB)
 	strId := c.Param("id")
 	id, err := strconv.Atoi(strId)
 	if err != nil {
 		c.Logger().Error(err)
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Errorf("invalid conversation id [%s]: %w", strId, err).Error())
 	}
-	body := c.Get(constants.BODY_KEY).([]byte)
+	body := c.Get(config.BODY_KEY).([]byte)
 	request := chat.CreateMessageRequest{}
 	proto.Unmarshal(body, &request)
 	message, err := db.CreateMessage(request.Body, chat.Message_USER, int64(id))

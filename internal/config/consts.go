@@ -1,9 +1,9 @@
-package constants
+package config
 
 const (
-	OPEN_API_TOKEN_KEY = "OPEN_API_TOKEN"
-	DB_KEY             = "DB"
-	BODY_KEY           = "BODY"
+	OPEN_AI_TOKEN_KEY = "OPEN_AI_TOKEN"
+	DB_KEY            = "DB"
+	BODY_KEY          = "BODY"
 )
 
 const (
@@ -14,4 +14,5 @@ const (
 	LIST_CONVERSATIONS_QUERY        = "list_conversations"
 	CREATE_MESSAGE_QUERY            = "create_message"
 	GET_MESSAGE_QUERY               = "get_message"
+	UPDATE_CONVERSATION_QUERY       = "update_conversation"
 )

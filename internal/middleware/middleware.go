@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v4"
-	"github.com/timsexperiments/chat-cli/internal/constants"
+	"github.com/timsexperiments/chat-cli/internal/config"
 	"github.com/timsexperiments/chat-cli/internal/database"
 )
 
@@ -30,7 +30,7 @@ func AuthChecker(next echo.HandlerFunc) echo.HandlerFunc {
 		if len(token) == 0 {
 			return echo.NewHTTPError(http.StatusUnauthorized, "missing open api token")
 		}
-		c.Set(constants.OPEN_API_TOKEN_KEY, token)
+		c.Set(config.OPEN_AI_TOKEN_KEY, token)
 		return next(c)
 	}
 }
@@ -48,7 +48,7 @@ func ProtobufBodyChecker(next echo.HandlerFunc) echo.HandlerFunc {
 		if contentType != "application/protobuf" {
 			return echo.NewHTTPError(http.StatusUnsupportedMediaType, fmt.Errorf("invalid content type. Expected application/protobuf: %s", contentType).Error())
 		}
-		c.Set(constants.BODY_KEY, body)
+		c.Set(config.BODY_KEY, body)
 		return next(c)
 	}
 }
@@ -56,7 +56,7 @@ func ProtobufBodyChecker(next echo.HandlerFunc) echo.HandlerFunc {
 func ContextDB(db *database.DB) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			c.Set(constants.DB_KEY, db)
+			c.Set(config.DB_KEY, db)
 			return next(c)
 		}
 	}
