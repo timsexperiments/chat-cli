@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/timsexperiments/chat-cli/internal/constants"
+	"github.com/timsexperiments/chat-cli/internal/config"
 	"github.com/timsexperiments/chat-cli/internal/proto/chat"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func (db *DB) CreateMessage(body string, sender chat.Message_Sender, conversationId int64) (*chat.Message, error) {
-	result, err := db.Exec(constants.CREATE_MESSAGE_QUERY, body, sender.String(), conversationId)
+	result, err := db.Exec(config.CREATE_MESSAGE_QUERY, body, sender.String(), conversationId)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create message: %w", err)
 	}
@@ -29,7 +29,7 @@ func (db *DB) CreateMessage(body string, sender chat.Message_Sender, conversatio
 }
 
 func (db *DB) GetMessage(id int) (*chat.Message, error) {
-	rows, err := db.Query(constants.GET_MESSAGE_QUERY, id)
+	rows, err := db.Query(config.GET_MESSAGE_QUERY, id)
 	if err != nil {
 		return nil, fmt.Errorf("unable to get conversation: %w", err)
 	}

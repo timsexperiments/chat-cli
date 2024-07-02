@@ -1,5 +1,6 @@
 SELECT
     c.id,
+    completion_id,
     c.title,
     c.context,
     c.created_at,
