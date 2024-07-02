@@ -73,15 +73,23 @@ func getConversationHandler(c echo.Context) error {
 	db := c.Get(constants.DB_KEY).(*database.DB)
 	strId := c.Param("id")
 	id, err := strconv.Atoi(strId)
+	var conversation *chat.Conversation
+
+	if err != nil {
+		conversation, err = db.GetConversationByTitle(strId)
+		if err != nil {
+			c.Logger().Error(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("unable to get conversation by title '%s': %w", strId, err).Error())
+		}
+		return response.Protobuf(c, http.StatusOK, conversation)
+	}
+
+	conversation, err = db.GetConversation(id)
 	if err != nil {
 		c.Logger().Error(err)
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Errorf("invalid conversation id [%s]: %w", strId, err).Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("unable to get conversation by id '%d': %w", id, err).Error())
 	}
-	conversation, err := db.GetConversation(id)
-	if err != nil {
-		c.Logger().Error(err)
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("unable to get conversation: %w", err).Error())
-	}
+
 	return response.Protobuf(c, http.StatusOK, conversation)
 }
 
